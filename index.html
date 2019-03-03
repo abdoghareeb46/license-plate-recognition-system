@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>LPR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/app.css">
+    <link rel="stylesheet" href="css/font-awesome.min.css">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body style="padding-top:70px">
+    <section class="container">
+        <div class="row">
+            <h1 class="col-md-12">License Plate Recognition System (LPR)</h1>
+            <fieldset class="col-md-12 border" style="padding:20px">
+                <div class="row">
+                    <form action="" method="POST" class="col-md-8 upload_img">
+                        <div class="form-group" style="margin-bottom:80px">
+                            <label >Enter an Image</label>
+                            <input id="imgInp" type="file" name="file" class="form-control">
+                        </div>
+                        <!-- <button type="button" class="btn btn-primary upload"><i class="fa fa-upload"></i> Upload Image</button> -->
+                        <button type="submit" class="btn btn-primary process"><i class="fa fa-refresh"></i> Process </button>
+                    </form>
+                    <img src="" id="myImage" style="width:200px;height:200px;" class="col-md-4 img-thumbnail" alt="">
+              </div>
+            </fieldset>
+            <div class="markers col-md-12">
+                <div class="row" style="margin-top:30px">
+                    <div class="col-md-6 succ" style="display:none">
+                        <i class="fa fa-4x fa-check-circle badge-success"></i> <span style="font-size: 50px"> Allowed</span>
+                    </div>
+                    <div class="col-md-6 fail" style="display:none">
+                            <i class="fa fa-4x fa-close badge-danger"></i> <span style="font-size: 50px"> Not Allowed</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row segmentedimages">
+            
+        </div>
+    </section>
+
+    <script src="js/jquery-3.1.0.min.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
