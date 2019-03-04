@@ -2,6 +2,29 @@ import cv2
 import numpy as np
 import psycopg2
 from sklearn.externals import joblib
+import glob
+from sklearn.preprocessing import LabelEncoder
+import keras
+from keras.models import Model
+from keras.layers import Input, Dense, Dropout
+from keras.layers import Reshape, Flatten
+from keras.layers import Conv2D, MaxPooling2D
+from keras.utils import to_categorical
+import numpy as np
+from PIL import Image
+import os
+from matplotlib import pyplot as plt
+import cv2
+import pandas as pd
+from keras.preprocessing import image
+from keras.layers.normalization import BatchNormalization
+import h5py
+import itertools
+from keras.preprocessing.image import ImageDataGenerator,array_to_img, img_to_array, load_img
+from keras.layers.convolutional import *
+from keras.models import Sequential
+from keras.layers import Convolution2D, MaxPooling2D
+from keras.layers import Activation, Dropout, Flatten, Dense
 
 ################################## Resize Images ##############################
 def image_resize(image, width = 250, height = 125, inter = cv2.INTER_AREA):
@@ -98,8 +121,8 @@ def segment(img):
             l.append('C:/segmented/character_{}.png'.format(d))
             d+=1
     return l
-################################## Classification #############################
-#takes a list of segmented images and return a list of letters images   
+########################## Classification #############################
+#takes a list of segmented images and classify noise/char/digits
 def classify_noise(segmented_list):
     classnoise = joblib.load('classnoise.pkl')
     #print(classnoise)
@@ -134,8 +157,57 @@ def classify_noise(segmented_list):
     for i in range(len(letters)):
         p = "C:/Segmented/noise/"+str(i)+'.jpg'
         cv2.imwrite(p,letters[i])
-        
+   ######################
+     
 
+
+
+
+
+
+
+
+
+
+
+        
+############################### SVM Classification #####################################        
+def recoginition():
+    chars = glob.glob('C:/Segmented/char/*')
+    digits = glob.glob('C:/Segmented/digit/*')
+    char = []
+    digit =[]
+    classdigit = joblib.load('classdigit.pkl')
+    classchar = joblib.load('classchar.pkl')
+    encoder = LabelEncoder()
+    encoder.classes_ = np.load('char_enc.npy')
+    for i in range(len(chars)):
+        image = cv2.imread(chars[i])
+        img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        img = cv2.resize(img,(50,50))
+        img = img.flatten().reshape(1,-1)
+        pred = classchar.predict(img)
+        c = encoder.inverse_transform(np.array([pred]))[0]
+        char.append(c[0])
+        
+    for i in range(len(digits)):
+        image = cv2.imread(digits[i])
+        img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        img = cv2.resize(img,(50,50))
+        img = img.flatten().reshape(1,-1)
+        pred = classdigit.predict(img)
+        digit.append(pred[0])
+        
+    if len(char)>=3:
+        char=[char[0].upper(),char[1].upper(),char[2].upper()]
+    else:
+        char=[""]
+    if len(digit)>=4:
+        digit=[digit[0],digit[1],digit[2],digit[3]]
+    else:
+        digit=digit
+        
+    return char,digit
 
 
 
@@ -182,3 +254,246 @@ def check_db(pn):
      cursor.close()
      connection.close()
      return retval
+ ##########
+ 
+
+
+
+
+
+
+
+
+
+img_width, img_height = 150, 150
+
+
+
+
+
+from keras.layers.convolutional import *
+from keras.models import Sequential
+from keras.layers import Convolution2D, MaxPooling2D
+from keras.layers import Activation, Dropout, Flatten, Dense
+
+
+# # Arabic Numbers
+
+
+def model_loading():
+    
+    model = Sequential()
+    model.add(Convolution2D(32, (3, 3), input_shape=(img_width, img_height,3)))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model.add(Convolution2D(32, (3, 3)))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model.add(Convolution2D(64, (3, 3)))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model.add(Flatten())
+    model.add(Dense(64))
+    model.add(Activation('relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(17))
+    model.add(Activation('softmax'))
+    model.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+    model.load_weights('models/arabic_letters_epoch_10.h5')
+    return model
+
+
+
+
+def load_image(img_path, show=False):
+    img = image.load_img(img_path, target_size=(150, 150))
+    img_tensor = image.img_to_array(img)                    # (height, width, channels)
+    img_tensor = np.expand_dims(img_tensor, axis=0)         # (1, height, width, channels), add a dimension because the model expects this shape: (batch_size, height, width, channels)
+    img_tensor /= 255.                                      # imshow expects values in the range [0, 1]
+    
+
+    return img_tensor
+
+
+
+
+
+arabic = ['أ','ب','د','ع','ق','ه','ح','ك','ل','ن','ر','س','ط','و','ي','ص','م']
+def arabic_letters(img_folder_path):
+    i = -1
+    arr = []
+    for im in os.listdir(img_folder_path):
+        i= i + 1
+        new_image = load_image(img_folder_path+'/{0}.jpg'.format(i))
+        model=model_loading()
+        pred = model.predict(new_image)
+        array = pred
+        result= array[0]
+        answer = np.argmax(result)
+        for m in range(17):
+            if answer == m:
+                arr.append(arabic[m])
+    return arr
+
+
+def model_loading2():
+    
+    model2 = Sequential()
+    model2.add(Convolution2D(32, (3, 3), input_shape=(img_width, img_height,3)))
+    model2.add(Activation('relu'))
+    model2.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model2.add(Convolution2D(32, (3, 3)))
+    model2.add(Activation('relu'))
+    model2.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model2.add(Convolution2D(64, (3, 3)))
+    model2.add(Activation('relu'))
+    model2.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model2.add(Flatten())
+    model2.add(Dense(64))
+    model2.add(Activation('relu'))
+    model2.add(Dropout(0.5))
+    model2.add(Dense(9))
+    model2.add(Activation('softmax'))
+    model2.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+    model2.load_weights('models/model_epoch_10.h5')
+    return model2
+    
+
+
+
+
+
+def arabic_numbers(img_folder_path):
+    i = -1
+    arr = []
+    for im in os.listdir(img_folder_path):
+        i= i + 1
+        new_image = load_image(img_folder_path+'/{0}.jpg'.format(i))
+        model2=model_loading2()
+        pred = model2.predict(new_image)
+        array = pred
+        result= array[0]
+        answer = np.argmax(result)
+        for m in range(9):
+            if answer == m:
+                arr.append(m+1)
+    return arr
+
+
+
+def model_loading3():
+    
+    model3 = Sequential()
+    model3.add(Convolution2D(32, (3, 3), input_shape=(img_width, img_height,3)))
+    model3.add(Activation('relu'))
+    model3.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model3.add(Convolution2D(32, (3, 3)))
+    model3.add(Activation('relu'))
+    model3.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model3.add(Convolution2D(64, (3, 3)))
+    model3.add(Activation('relu'))
+    model3.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model3.add(Flatten())
+    model3.add(Dense(64))
+    model3.add(Activation('relu'))
+    model3.add(Dropout(0.5))
+    model3.add(Dense(1))
+    model3.add(Activation('sigmoid'))
+    model3.compile(loss='binary_crossentropy',
+              optimizer='rmsprop',
+              metrics=['accuracy'])
+    model3.load_weights('models/noise_basic_cnn_epochs_10.h5')
+    return model3
+
+
+
+
+
+
+def noise(img_folder_path):
+    i = -1
+    arr = []
+    ind = []
+    for im in os.listdir(img_folder_path):
+        i= i + 1
+        new_image = load_image(img_folder_path+'/{0}.jpg'.format(i)) 
+        model3=model_loading3()
+        m ='{0}.jpg'.format(i)
+        pred = model3.predict(new_image)
+        array = pred[0]
+        if array > .5:
+            arr.append(m)
+            ind.append(i)
+    #print("Noise :")
+    return ind
+
+
+
+
+#ch = 'c:/Segmented/char'
+#di = 'c:/Segmented/digit'
+#arabic_numbers(di)
+#arabic_letters(no)
+
+def final_fun(ch, di):
+    digit_arr = noise(di)
+    char_arr = noise(ch)
+    i,l = 0,0
+    number_pred = arabic_numbers(di)
+    char_pred = arabic_letters(ch)
+    if len(char_arr) > 0 :
+        for i in range(len(char_arr)):
+            char_pred.remove(char_pred[char_arr[i]])
+    temp = []
+    if len(digit_arr) > 0 :     
+        for l in range(len(digit_arr)):
+            temp.append(digit_arr[l])
+        temp.reverse()
+        for j in range(len(temp)):
+            x = temp[j]
+            del number_pred[x]
+    char_pred.reverse()
+    final_ = number_pred + char_pred
+    return final_
+
+
+
+def final(ch, di):
+    digit_arr = noise(di)
+    char_arr = noise(ch)
+    i,l = 0,0
+    number_pred = arabic_numbers(di)
+    char_pred = arabic_letters(ch)
+    if len(char_arr) > 0 :
+        for i in range(len(char_arr)):
+            char_pred.remove(char_pred[char_arr[i]])
+    temp = []
+    if len(digit_arr) > 0 :     
+        for l in range(len(digit_arr)):
+            temp.append(digit_arr[l])
+        temp.reverse()
+        for j in range(len(temp)):
+            x = temp[j]
+            del number_pred[x]
+    char_pred.reverse()
+    if (len(number_pred) > 4):
+        number_pred = number_pred[0:4]
+    if (len(char_pred) > 3):
+        char_pred = char_pred[0:3]
+    final_ = number_pred + char_pred
+    return final_
+
+

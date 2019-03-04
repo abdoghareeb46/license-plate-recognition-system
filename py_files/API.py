@@ -13,10 +13,18 @@ def get_res():
     img= mod.detect_plate(path)
     imgList= mod.segment(img)
     mod.classify_noise(imgList)
-    #lis=['7', '4', '0', '3', 'R', 'U', 'A'] # Test Function
-    #cl=mod.classification(imgList)
-    #pn=mod.get_pn(lis)
-    check=False
+    m1=mod.model_loading()
+    m2=mod.model_loading2()
+    m3=mod.model_loading3()
+    ch = 'C:/Segmented/char'
+    di = 'C:/Segmented/digit'
+    li=mod.final(ch,di)
+    #char,digit=mod.recoginition()
+    #li=digit+char
+    pn=mod.get_pn(li)
+    print(pn)
+    check=mod.check_db(pn)
+    
     data={'path':path,"imges":imgList,'res':check}
     return jsonify(data)
 #################################### For solving cross ##########################
